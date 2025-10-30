@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
       if (r.ok) {
         const j = await r.json()
         if (j?.status === "success" && j?.result) {
+          await persistLastPlan(j.result)
           return Response.json({ ok: true, result: j.result })
         }
         if (j?.status === "error") {
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
     if (!parsed) {
       return new Response(JSON.stringify({ ok: false, error: "Skrypt Python nie zwrócił JSON", stdout: out.slice(0, 5000) }), { status: 500 })
     }
+    await persistLastPlan(parsed)
     return Response.json({ ok: true, result: parsed })
 	} catch (e: any) {
 		return new Response(JSON.stringify({ ok: false, error: String(e?.message ?? e) }), { status: 500 })
@@ -74,6 +76,60 @@ async function parseFlexibleJson(stdout: string, dataDir: string): Promise<any |
     } catch {}
   }
   return null
+}
+
+async function persistLastPlan(result: any) {
+  try {
+    // Try to load assignments from CSV if available
+    const csvPath = path.join(process.cwd(), "plan_assignments.csv")
+    try {
+      const csvText = await fs.readFile(csvPath, "utf8")
+      const lines = csvText.trim().split(/\r?\n/).filter(l => l.trim())
+      if (lines.length > 1) {
+        const parseCsvLine = (line: string): string[] => {
+          const res: string[] = []
+          let current = ""
+          let inQuotes = false
+          for (let i = 0; i < line.length; i++) {
+            const ch = line[i]
+            if (ch === '"') {
+              if (inQuotes && line[i + 1] === '"') {
+                current += '"'
+                i++
+              } else {
+                inQuotes = !inQuotes
+              }
+            } else if (ch === "," && !inQuotes) {
+              res.push(current.trim())
+              current = ""
+            } else {
+              current += ch
+            }
+          }
+          res.push(current.trim())
+          return res
+        }
+        const headers = parseCsvLine(lines[0]).map(h => h.toLowerCase().replace(/"/g, "").trim())
+        const assignments = []
+        for (let i = 1; i < lines.length; i++) {
+          const vals = parseCsvLine(lines[i])
+          const obj: any = {}
+          headers.forEach((h, idx) => {
+            const val = vals[idx]?.replace(/"/g, "").trim() || ""
+            if (h === "route_id" || h === "routeid") obj.routeId = Number(val) || 0
+            else if (h === "vehicle_id" || h === "vehicleid") obj.vehicleId = Number(val) || 0
+            else if (h === "swap") obj.swap = val === "True" || val === "true" || val === "1"
+            else if (h === "swap_cost_pln" || h === "swapcostpln") obj.deadheadCost = Number(val) || 0
+            else if (h === "total_cost_pln" || h === "totalcostpln") obj.totalCost = Number(val) || 0
+          })
+          if (obj.routeId && obj.vehicleId) assignments.push(obj)
+        }
+        if (assignments.length > 0) result.assignments = assignments
+      }
+    } catch {}
+    const outPath = path.join(process.cwd(), "data", "last_plan.json")
+    await fs.writeFile(outPath, JSON.stringify(result), "utf8")
+  } catch {}
 }
 
 

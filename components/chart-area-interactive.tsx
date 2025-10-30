@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from "recharts"
 
 import { useIsMobile } from '@/hooks/use-mobile'
 import {
@@ -24,8 +24,16 @@ export const description = "Koszty planu (słupki)"
 type CostBar = { label: string; value: number }
 
 const chartConfig = {
-  value: { label: "PLN", color: "var(--primary)" },
+  deadhead: { label: "Dojazdy", color: "oklch(0.45 0.15 250)" },
+  overage: { label: "Nadprzebieg", color: "oklch(0.65 0.18 50)" },
+  total: { label: "Razem", color: "oklch(0.55 0.15 145)" },
 } satisfies ChartConfig
+
+const getBarColor = (label: string): string => {
+  if (label === "Dojazdy") return "oklch(0.45 0.15 250)" // Niebieski
+  if (label === "Nadprzebieg") return "oklch(0.65 0.18 50)" // Pomarańczowy
+  return "oklch(0.55 0.15 145)" // Zielony dla "Razem"
+}
 
 export function ChartAreaInteractive({ data }: { data: CostBar[] }) {
   const isMobile = useIsMobile()
@@ -47,7 +55,11 @@ export function ChartAreaInteractive({ data }: { data: CostBar[] }) {
             <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
             <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(v) => Number(v).toLocaleString("pl-PL")} />
             <ChartTooltip cursor={{ fill: "hsl(var(--muted))" }} content={<ChartTooltipContent indicator="dot" valueFormatter={(v) => `${Number(v).toLocaleString("pl-PL")} PLN`} />} />
-            <Bar dataKey="value" fill="var(--primary)" radius={4} />
+            <Bar dataKey="value" radius={4}>
+              {bars.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={getBarColor(entry.label)} />
+              ))}
+            </Bar>
           </BarChart>
         </ChartContainer>
       </CardContent>

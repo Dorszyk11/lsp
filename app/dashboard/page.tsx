@@ -8,8 +8,7 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar'
 
-import { useEffect, useState } from "react"
-// using server-side loader from ./api/plan/local
+import { useState } from "react"
 
 export default function Page() {
   const [plan, setPlan] = useState<any | null>(null)
@@ -39,51 +38,6 @@ export default function Page() {
     }
   }
 
-  // no demo payload
-
-  async function tryLoadCsvFromPublic(): Promise<null | {
-    vehicles: Record<string, string>[]
-    locations: Record<string, string>[]
-    relations: Record<string, string>[]
-    routes: Record<string, string>[]
-    segments: Record<string, string>[]
-  }> {
-    try {
-      const v = await fetchFirst(["/data/Vehicles.csv","/data/vehicles.csv"], { cache: "no-store" })
-      const l = await fetchFirst(["/data/Locations.csv","/data/locations.csv"], { cache: "no-store" })
-      const rel = await fetchFirst([
-        "/data/Locations_relations.csv",
-        "/data/Location_relations.csv",
-        "/data/locations_relations.csv",
-        "/data/location_relations.csv",
-      ], { cache: "no-store" })
-      const r = await fetchFirst(["/data/Routes.csv","/data/routes.csv"], { cache: "no-store" })
-      const s = await fetchFirst(["/data/Segments.csv","/data/segments.csv"], { cache: "no-store" })
-      if (!v || !l || !rel || !r || !s) return null
-      const [vt,lt,relt,rt,st] = await Promise.all([v.text(), l.text(), rel.text(), r.text(), s.text()])
-      return {
-        vehicles: parseCsv(vt),
-        locations: parseCsv(lt),
-        relations: parseCsv(relt),
-        routes: parseCsv(rt),
-        segments: parseCsv(st),
-      }
-    } catch {
-      return null
-    }
-  }
-
-  async function fetchFirst(urls: string[], init?: RequestInit): Promise<Response | null> {
-    for (const u of urls) {
-      try {
-        const res = await fetch(u, init)
-        if (res.ok) return res
-      } catch {
-        // ignore and try next
-      }
-    }
-    return null
-  }
   return (
     <SidebarProvider
       style={
@@ -100,19 +54,13 @@ export default function Page() {
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
               <SectionCards
-                totalCost={(plan?.totalDeadheadCost ?? 0) + (plan?.totalOverageCost ?? 0)}
-                deadheadCost={plan?.totalDeadheadCost ?? 0}
-                overageCost={plan?.totalOverageCost ?? 0}
-                numSwaps={plan?.numSwaps ?? 0}
+                totalCost={plan?.total_cost ?? ((plan?.totalDeadheadCost ?? 0) + (plan?.totalOverageCost ?? 0))}
+                deadheadCost={plan?.swap_cost ?? plan?.totalDeadheadCost ?? 0}
+                overageCost={plan?.overrun_cost ?? plan?.totalOverageCost ?? 0}
+                numSwaps={plan?.swaps_count ?? plan?.numSwaps ?? 0}
                 pctVehiclesWithoutOverage={plan?.kpis?.pctVehiclesWithoutOverage ?? 0}
-                pctContractUtilization={plan?.kpis?.pctContractUtilization ?? 0}
-                // Flask mapping (snake_case)
-                {...(plan?.total_cost != null ? { totalCost: plan.total_cost } : {})}
-                {...(plan?.swap_cost != null ? { deadheadCost: plan.swap_cost } : {})}
-                {...(plan?.overrun_cost != null ? { overageCost: plan.overrun_cost } : {})}
-                {...(plan?.swaps_count != null ? { numSwaps: plan.swaps_count } : {})}
-                {...(plan?.contract_use_pct != null ? { pctContractUtilization: plan.contract_use_pct } : {})}
-                {...(plan?.goal_completion_pct != null ? { goalCompletionPct: plan.goal_completion_pct } : {})}
+                pctContractUtilization={plan?.contract_use_pct ?? plan?.kpis?.pctContractUtilization ?? 0}
+                goalCompletionPct={plan?.goal_completion_pct}
               />
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive data={buildCostBars(plan)} />
@@ -122,7 +70,7 @@ export default function Page() {
                   Ilość dni:
                   <input type="number" className="border rounded px-2 py-1 w-28 bg-background" value={days as any} onChange={(e) => setDays(e.target.value === "" ? "" : Number(e.target.value))} />
                 </label>
-                <button onClick={generatePlan} className="px-4 py-2 rounded bg-primary text-primary-foreground disabled:opacity-50" disabled={loading}>
+                <button onClick={generatePlan} className="px-4 py-2 rounded bg-[#E61E1E] text-white hover:bg-[#cc1a1a] disabled:opacity-50 transition-colors" disabled={loading}>
                   {loading ? "Liczenie…" : "Generuj plan"}
                 </button>
                 {error && (
@@ -139,23 +87,6 @@ export default function Page() {
       </SidebarInset>
     </SidebarProvider>
   )
-}
-
-function buildCostSeries(plan: any): { date: string; deadhead: number; overage: number; total: number }[] {
-  if (!plan?.assignments) return []
-  const byDay: Record<string, { deadhead: number; overage: number }> = {}
-  for (const a of plan.assignments as any[]) {
-    const startStr = String(a.routeStartDatetime ?? a.start_datetime ?? "")
-    const dParsed = Date.parse(startStr)
-    const key = isFinite(dParsed) ? new Date(dParsed).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
-    const d = byDay[key] || { deadhead: 0, overage: 0 }
-    d.deadhead += Number(a.deadheadCost ?? 0)
-    d.overage += Number(a.overageCost ?? 0)
-    byDay[key] = d
-  }
-  return Object.entries(byDay)
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, v]) => ({ date, deadhead: Math.round(v.deadhead), overage: Math.round(v.overage), total: Math.round(v.deadhead + v.overage) }))
 }
 
 function buildCostBars(plan: any): { label: string; value: number }[] {

@@ -27,7 +27,8 @@ export function SectionCards(props: {
   const pctUtil = Math.round(props.pctContractUtilization ?? 0)
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-      <Card className="@container/card">
+      <Card className="@container/card relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-[#E61E1E]" />
         <CardHeader>
           <CardDescription>Łączny koszt</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
@@ -49,7 +50,8 @@ export function SectionCards(props: {
           </div>
         </CardFooter>
       </Card>
-      <Card className="@container/card">
+      <Card className="@container/card relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-[#E61E1E]" />
         <CardHeader>
           <CardDescription>Zamiany (dojazdy)</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
@@ -71,7 +73,8 @@ export function SectionCards(props: {
           </div>
         </CardFooter>
       </Card>
-      <Card className="@container/card">
+      <Card className="@container/card relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-[#E61E1E]" />
         <CardHeader>
           <CardDescription>Realizacja celu</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
@@ -91,7 +94,8 @@ export function SectionCards(props: {
           <div className="text-muted-foreground">Wyższe = lepiej</div>
         </CardFooter>
       </Card>
-      <Card className="@container/card">
+      <Card className="@container/card relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-[#E61E1E]" />
         <CardHeader>
           <CardDescription>Wykorzystanie kontraktów</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">

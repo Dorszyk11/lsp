@@ -3,8 +3,7 @@ Każdy pojazd posiada roczny limit przebiegu 150 000 km (z umowy serwisowej). Pr
 
 Cel: Rotować pojazdy między trasami, utrzymując limity i minimalizując koszty — przy ograniczeniu do maksymalnie 1 zamiany/pojazd/3 miesiące.
 
-MISJA
-W 24h zbudujcie prototyp inteligentnego planera floty, który potrafi:
+zbuduj prototyp inteligentnego planera floty, który potrafi:
 
 przewidywać przebiegi na podstawie tras i dotychczasowych przebiegów,
 wyznaczać optymalny plan przypisań i zamian pojazdów,

@@ -13,6 +13,7 @@ import {
   IconHelp,
   IconInnerShadowTop,
   IconListDetails,
+  IconMap,
   IconReport,
   IconSearch,
   IconSettings,
@@ -54,6 +55,11 @@ const data = {
       title: "Serwis",
       url: "/serwis",
       icon: IconChartBar,
+    },
+    {
+      title: "Mapa",
+      url: "/mapa",
+      icon: IconMap,
     },
   ],
   navClouds: [

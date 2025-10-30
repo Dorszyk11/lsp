@@ -1,7 +1,6 @@
 "use client"
 import { AppSidebar } from '@/components/app-sidebar'
 import { ChartAreaInteractive } from '@/components/chart-area-interactive'
-import { DataTable } from '@/components/data-table'
 import { SectionCards } from '@/components/section-cards'
 import { SiteHeader } from '@/components/site-header'
 import {
@@ -9,7 +8,6 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar'
 
-import data from "./data.json"
 import { useEffect, useState } from "react"
 // using server-side loader from ./api/plan/local
 
@@ -117,7 +115,7 @@ export default function Page() {
                 {...(plan?.goal_completion_pct != null ? { goalCompletionPct: plan.goal_completion_pct } : {})}
               />
               <div className="px-4 lg:px-6">
-                <ChartAreaInteractive data={buildCostSeries(plan)} />
+                <ChartAreaInteractive data={buildCostBars(plan)} />
               </div>
               <div className="px-4 lg:px-6 flex items-center gap-4">
                 <label className="text-sm text-muted-foreground flex items-center gap-2">
@@ -132,18 +130,9 @@ export default function Page() {
                     {error}
                   </div>
                 )}
-                {plan && (
-                  <div className="text-sm text-muted-foreground">
-                    <span>Koszt dojazdów: {(plan.totalDeadheadCost ?? 0).toLocaleString("pl-PL")} PLN</span>
-                    <span className="mx-2">•</span>
-                    <span>Nadprzebieg: {(plan.totalOverageCost ?? 0).toLocaleString("pl-PL")} PLN</span>
-                    <span className="mx-2">•</span>
-                    <span>Zamiany: {plan.numSwaps}</span>
-                  </div>
-                )}
+                
               </div>
-              {/* CSV upload removed: loading from ./data on server */}
-              <DataTable data={data} />
+              
             </div>
           </div>
         </div>
@@ -167,4 +156,20 @@ function buildCostSeries(plan: any): { date: string; deadhead: number; overage: 
   return Object.entries(byDay)
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([date, v]) => ({ date, deadhead: Math.round(v.deadhead), overage: Math.round(v.overage), total: Math.round(v.deadhead + v.overage) }))
+}
+
+function buildCostBars(plan: any): { label: string; value: number }[] {
+  if (!plan) return []
+  if (plan.total_cost != null || plan.swap_cost != null || plan.overrun_cost != null) {
+    return [
+      { label: "Dojazdy", value: Number(plan.swap_cost ?? 0) },
+      { label: "Nadprzebieg", value: Number(plan.overrun_cost ?? 0) },
+      { label: "Razem", value: Number(plan.total_cost ?? ((plan.swap_cost ?? 0) + (plan.overrun_cost ?? 0))) },
+    ]
+  }
+  return [
+    { label: "Dojazdy", value: Number(plan.totalDeadheadCost ?? 0) },
+    { label: "Nadprzebieg", value: Number(plan.totalOverageCost ?? 0) },
+    { label: "Razem", value: Number((plan.totalDeadheadCost ?? 0) + (plan.totalOverageCost ?? 0)) },
+  ]
 }
